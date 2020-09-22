@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 
 def detect_img(yolo):
-    start_index = 170
+    start_index = 190
     test_dir = r'F:\WorkDir\DeepLearning\keras-yolo3-captcha\data\captchas\images'
     for image_index in range(start_index, 400):
         image_file = os.path.join(test_dir, '{}.png'.format(image_index))
