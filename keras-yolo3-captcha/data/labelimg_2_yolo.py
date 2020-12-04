@@ -4,11 +4,11 @@ import cv2
 
 labels = ['A','B','C','D','E','F','G','H','J','K','L','M','N','P','Q',
           'R','S','T','U','V','W','X','Y','Z','2','3','4','5','6','7','8']
-dirpath = r'./captchas/labels'  # 原来存放xml文件的目录
+dirpath = r'./capchars/labels'  # 原来存放xml文件的目录
 for fp in os.listdir(dirpath):
     root = ET.parse(os.path.join(dirpath, fp)).getroot()
     filename = root.find('filename').text
-    img_path = r'F:\WorkDir\DeepLearning\keras-yolo3-captcha\data\captchas\images\{}.png'.format(filename)
+    img_path = r'F:\DeepLearning\keras-yolo3-master\data\capchars\images\{}.png'.format(filename)
     img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
     height, width = img.shape
     boxes = [img_path, ]
@@ -21,5 +21,5 @@ for fp in os.listdir(dirpath):
         xmax = sub[2].text
         ymax = sub[3].text
         boxes.append(','.join([xmin, ymin, xmax, ymax, str(label_index)]))
-    with open('./captchas/dataset_1.txt', 'a+') as f:
+    with open('./capchars/data.txt', 'a+') as f:
         f.write(' '.join(boxes) + '\n')

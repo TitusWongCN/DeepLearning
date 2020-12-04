@@ -1,7 +1,7 @@
 <annotation verified="no">
   <folder>images</folder>
   <filename>166</filename>
-  <path>F:\WorkDir\DeepLearning\keras-yolo3-captcha\data\captchas\images\166.png</path>
+  <path>F:\DeepLearning\keras-yolo3\data\capchars\images\166.png</path>
   <source>
     <database>Unknown</database>
   </source>
@@ -18,9 +18,9 @@
     <Difficult>0</Difficult>
     <bndbox>
       <xmin>1</xmin>
-      <ymin>11</ymin>
+      <ymin>10</ymin>
       <xmax>10</xmax>
-      <ymax>26</ymax>
+      <ymax>25</ymax>
     </bndbox>
   </object>
   <object>
@@ -29,7 +29,7 @@
     <truncated>0</truncated>
     <Difficult>0</Difficult>
     <bndbox>
-      <xmin>18</xmin>
+      <xmin>17</xmin>
       <ymin>8</ymin>
       <xmax>34</xmax>
       <ymax>23</ymax>
@@ -43,7 +43,7 @@
     <bndbox>
       <xmin>38</xmin>
       <ymin>9</ymin>
-      <xmax>54</xmax>
+      <xmax>55</xmax>
       <ymax>24</ymax>
     </bndbox>
   </object>

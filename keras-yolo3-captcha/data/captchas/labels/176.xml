@@ -1,7 +1,7 @@
 <annotation verified="no">
   <folder>images</folder>
   <filename>176</filename>
-  <path>F:\WorkDir\DeepLearning\keras-yolo3-captcha\data\captchas\images\176.png</path>
+  <path>F:\DeepLearning\keras-yolo3\data\capchars\images\176.png</path>
   <source>
     <database>Unknown</database>
   </source>
@@ -19,7 +19,7 @@
     <bndbox>
       <xmin>1</xmin>
       <ymin>8</ymin>
-      <xmax>15</xmax>
+      <xmax>16</xmax>
       <ymax>23</ymax>
     </bndbox>
   </object>

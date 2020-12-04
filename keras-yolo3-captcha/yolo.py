@@ -4,15 +4,13 @@ Class definition of YOLO_v3 style detection model on image and video
 """
 
 import colorsys
-import os
-import cv2
 from timeit import default_timer as timer
 
 import numpy as np
 from keras import backend as K
 from keras.models import load_model
 from keras.layers import Input
-from PIL import Image, ImageFont, ImageDraw
+from PIL import ImageFont, ImageDraw
 
 from yolo3.model import yolo_eval, yolo_body, tiny_yolo_body
 from yolo3.utils import letterbox_image
@@ -70,8 +68,8 @@ class YOLO(object):
         try:
             self.yolo_model = load_model(model_path, compile=False)
         except:
-            self.yolo_model = tiny_yolo_body(Input(shape=(None,None,1)), num_anchors//2, num_classes) \
-                if is_tiny_version else yolo_body(Input(shape=(None,None,1)), num_anchors//3, num_classes)
+            self.yolo_model = tiny_yolo_body(Input(shape=(None,None,3)), num_anchors//2, num_classes) \
+                if is_tiny_version else yolo_body(Input(shape=(None,None,3)), num_anchors//3, num_classes)
             self.yolo_model.load_weights(self.model_path) # make sure model, anchors and classes match
         else:
             assert self.yolo_model.layers[-1].output_shape[-1] == \
@@ -102,7 +100,18 @@ class YOLO(object):
 
     def detect_image(self, image):
         start = timer()
-        image_data = np.array(image, dtype='float32')
+        image = letterbox_image(image, tuple(reversed(self.model_image_size)))
+        # if self.model_image_size != (None, None):
+        #     assert self.model_image_size[0]%32 == 0, 'Multiples of 32 required'
+        #     assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
+        #     boxed_image = letterbox_image(image, tuple(reversed(self.model_image_size)))
+        # else:
+        #     new_image_size = (image.width - (image.width % 32),
+        #                       image.height - (image.height % 32))
+        #     boxed_image = letterbox_image(image, new_image_size)
+        boxed_image = image
+        image_data = np.array(boxed_image, dtype='float32')
+        print(image_data.shape)
         image_data /= 255.
         image_data = np.expand_dims(image_data, 0)  # Add batch dimension.
 
@@ -110,21 +119,26 @@ class YOLO(object):
             [self.boxes, self.scores, self.classes],
             feed_dict={
                 self.yolo_model.input: image_data,
-                self.input_image_shape: [image.shape[0], image.shape[1]],
+                self.input_image_shape: [image.size[1], image.size[0]],
                 K.learning_phase(): 0
             })
+
+        print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
 
         chars = {}
         for i, c in reversed(list(enumerate(out_classes))):
             predicted_class = self.class_names[c]
             box = out_boxes[i]
             score = out_scores[i]
+
             label = '{} {:.2f}'.format(predicted_class, score)
+
             top, left, bottom, right = box
             top = max(0, np.floor(top + 0.5).astype('int32'))
             left = max(0, np.floor(left + 0.5).astype('int32'))
-            bottom = min(image.shape[0], np.floor(bottom + 0.5).astype('int32'))
-            right = min(image.shape[1], np.floor(right + 0.5).astype('int32'))
+            bottom = min(image.size[1], np.floor(bottom + 0.5).astype('int32'))
+            right = min(image.size[0], np.floor(right + 0.5).astype('int32'))
+            print(label, (left, top), (right, bottom))
             if left + right not in chars:
                 chars[left + right] = [label.split(' ')[0], float(label.split(' ')[1])]
             else:
@@ -132,12 +146,8 @@ class YOLO(object):
                     chars[left + right] = [label.split(' ')[0], float(label.split(' ')[1])]
                 else:
                     continue
-            # My kingdom for a good redistributable image drawing library.
-            cv2.rectangle(image, (left, top), (right, bottom), (255, 255, 255), 2)
-            cv2.putText(image, label, (left, top + 5), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 255), 2)
 
         char_order = sorted(chars.items(), key=lambda x:x[0])
-        print(char_order)
 
         end = timer()
         print(end - start)
@@ -145,45 +155,3 @@ class YOLO(object):
 
     def close_session(self):
         self.sess.close()
-
-def detect_video(yolo, video_path, output_path=""):
-    import cv2
-    vid = cv2.VideoCapture(video_path)
-    if not vid.isOpened():
-        raise IOError("Couldn't open webcam or video")
-    video_FourCC    = int(vid.get(cv2.CAP_PROP_FOURCC))
-    video_fps       = vid.get(cv2.CAP_PROP_FPS)
-    video_size      = (int(vid.get(cv2.CAP_PROP_FRAME_WIDTH)),
-                        int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT)))
-    isOutput = True if output_path != "" else False
-    if isOutput:
-        print("!!! TYPE:", type(output_path), type(video_FourCC), type(video_fps), type(video_size))
-        out = cv2.VideoWriter(output_path, video_FourCC, video_fps, video_size)
-    accum_time = 0
-    curr_fps = 0
-    fps = "FPS: ??"
-    prev_time = timer()
-    while True:
-        return_value, frame = vid.read()
-        image = Image.fromarray(frame)
-        image = yolo.detect_image(image)
-        result = np.asarray(image)
-        curr_time = timer()
-        exec_time = curr_time - prev_time
-        prev_time = curr_time
-        accum_time = accum_time + exec_time
-        curr_fps = curr_fps + 1
-        if accum_time > 1:
-            accum_time = accum_time - 1
-            fps = "FPS: " + str(curr_fps)
-            curr_fps = 0
-        cv2.putText(result, text=fps, org=(3, 15), fontFace=cv2.FONT_HERSHEY_SIMPLEX,
-                    fontScale=0.50, color=(255, 0, 0), thickness=2)
-        cv2.namedWindow("result", cv2.WINDOW_NORMAL)
-        cv2.imshow("result", result)
-        if isOutput:
-            out.write(result)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-    yolo.close_session()
-

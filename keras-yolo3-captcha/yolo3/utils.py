@@ -1,7 +1,10 @@
 """Miscellaneous utility functions."""
+
 from functools import reduce
+
 from PIL import Image
 import numpy as np
+from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
 import cv2
 
 def compose(*funcs):
@@ -17,7 +20,12 @@ def compose(*funcs):
 
 def letterbox_image(image, size):
     '''resize image with unchanged aspect ratio using padding'''
+    iw, ih = image.size
     w, h = size
+    # scale = min(w/iw, h/ih)
+    # nw = int(iw*scale)
+    # nh = int(ih*scale)
+
     image = image.resize((w,h), Image.BICUBIC)
     new_image = Image.new('RGB', size, (128,128,128))
     new_image.paste(image, (0, 0))
@@ -26,29 +34,110 @@ def letterbox_image(image, size):
 def rand(a=0, b=1):
     return np.random.rand()*(b-a) + a
 
-def get_random_data(annotation_line, input_shape, max_boxes=4):
+def get_random_data(annotation_line, input_shape, random=True, max_boxes=4, jitter=.3, hue=.1, sat=1.5, val=1.5, proc_img=True):
     '''random preprocessing for real-time data augmentation'''
     line = annotation_line.split()
-    image = cv2.imread(line[0], cv2.IMREAD_GRAYSCALE)
-    _, thresh = cv2.threshold(image, 150, 255, cv2.THRESH_BINARY)
-    ih, iw = thresh.shape
+    image = Image.open(line[0])
+    iw, ih = image.size
     h, w = input_shape
     boxes = np.array([np.array(list(map(int,box.split(',')))) for box in line[1:]])
-    image_resize = cv2.resize(thresh, (w, h), interpolation=cv2.INTER_LINEAR)
+    # box = np.array([np.array(list(map(int,box.split(',')))) for box in line[1:]])
 
+    # if not random:
+    #     # resize image
+    #     scale = min(w/iw, h/ih)
+    #     nw = int(iw*scale)
+    #     nh = int(ih*scale)
+    #     dx = (w-nw)//2
+    #     dy = (h-nh)//2
+    #     image_data=0
+    #     if proc_img:
+    #         image = image.resize((nw,nh), Image.BICUBIC)
+    #         new_image = Image.new('RGB', (w,h), (128,128,128))
+    #         new_image.paste(image, (dx, dy))
+    #         image_data = np.array(new_image)/255.
+    #
+    #     # correct boxes
+    #     box_data = np.zeros((max_boxes,5))
+    #     if len(box)>0:
+    #         np.random.shuffle(box)
+    #         if len(box)>max_boxes: box = box[:max_boxes]
+    #         box[:, [0,2]] = box[:, [0,2]]*scale + dx
+    #         box[:, [1,3]] = box[:, [1,3]]*scale + dy
+    #         box_data[:len(box)] = box
+    #
+    #     return image_data, box_data
+    #
+    # # resize image
+    # new_ar = w/h * rand(1-jitter,1+jitter)/rand(1-jitter,1+jitter)
+    # scale = rand(.25, 2)
+    # if new_ar < 1:
+    #     nh = int(scale*h)
+    #     nw = int(nh*new_ar)
+    # else:
+    #     nw = int(scale*w)
+    #     nh = int(nw/new_ar)
+    # image = image.resize((nw,nh), Image.BICUBIC)
+    #
+    # # place image
+    # dx = int(rand(0, w-nw))
+    # dy = int(rand(0, h-nh))
+    # new_image = Image.new('RGB', (w,h), (128,128,128))
+    # new_image.paste(image, (dx, dy))
+    # image = new_image
+    #
+    # # flip image or not
+    # flip = rand()<.5
+    # if flip: image = image.transpose(Image.FLIP_LEFT_RIGHT)
+
+    # # distort image
+    # hue = rand(-hue, hue)
+    # sat = rand(1, sat) if rand()<.5 else 1/rand(1, sat)
+    # val = rand(1, val) if rand()<.5 else 1/rand(1, val)
+    # x = rgb_to_hsv(np.array(image)/255.)
+    # x[..., 0] += hue
+    # x[..., 0][x[..., 0]>1] -= 1
+    # x[..., 0][x[..., 0]<0] += 1
+    # x[..., 1] *= sat
+    # x[..., 2] *= val
+    # x[x>1] = 1
+    # x[x<0] = 0
+    # image_data = hsv_to_rgb(x) # numpy array, 0 to 1
+    #
+    # # correct boxes
+    # box_data = np.zeros((max_boxes,5))
+    # if len(box)>0:
+    #     np.random.shuffle(box)
+    #     box[:, [0,2]] = box[:, [0,2]]*nw/iw + dx
+    #     box[:, [1,3]] = box[:, [1,3]]*nh/ih + dy
+    #     if flip: box[:, [0,2]] = w - box[:, [2,0]]
+    #     box[:, 0:2][box[:, 0:2]<0] = 0
+    #     box[:, 2][box[:, 2]>w] = w
+    #     box[:, 3][box[:, 3]>h] = h
+    #     box_w = box[:, 2] - box[:, 0]
+    #     box_h = box[:, 3] - box[:, 1]
+    #     box = box[np.logical_and(box_w>1, box_h>1)] # discard invalid box
+    #     if len(box)>max_boxes: box = box[:max_boxes]
+    #     box_data[:len(box)] = box
+
+    image_resize = image.resize((w, h), Image.BICUBIC)
     box_data = np.zeros((max_boxes,5))
     np.random.shuffle(boxes)
     x_scale, y_scale = float(w / iw), float(h / ih)
+    # from PIL import ImageDraw
+    # draw = ImageDraw.Draw(image)
+    # draw_resize = ImageDraw.Draw(image_resize)
     for index, box in enumerate(boxes):
+        # draw.rectangle((box[0], box[1], box[2], box[3]), outline='white')
         box[0] = int(box[0] * x_scale)
         box[1] = int(box[1] * y_scale)
         box[2] = int(box[2] * x_scale)
         box[3] = int(box[3] * y_scale)
         box_data[index, :] = box
+        # draw_resize.rectangle((box[0], box[1], box[2], box[3]), outline='white')
+    # new_image.show()
     image_data = np.expand_dims(image_resize, axis=-1)
     image_data = np.array(image_data)/255.
+    # image.show()
+    # image_resize.show()
     return image_data, box_data
-
-if __name__ == '__main__':
-    get_random_data(r'F:\WorkDir\DeepLearning\keras-yolo3-captcha\data\captchas\images\1.png 1,12,13,26,21 19,12,30,26,27 37,12,54,26,0 57,5,73,20,12', (416, 416))
-

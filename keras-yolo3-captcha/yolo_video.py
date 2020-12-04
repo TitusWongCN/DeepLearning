@@ -1,24 +1,19 @@
 import sys
 import argparse
-from yolo import YOLO, detect_video
+from yolo import YOLO
 from PIL import Image
-import os
-import cv2
-import numpy as np
 
 def detect_img(yolo):
-    start_index = 190
-    test_dir = r'F:\WorkDir\DeepLearning\keras-yolo3-captcha\data\captchas\images'
-    for image_index in range(start_index, 400):
-        image_file = os.path.join(test_dir, '{}.png'.format(image_index))
-        image = cv2.imread(image_file, cv2.IMREAD_GRAYSCALE)
-        _, thresh = cv2.threshold(image, 150, 255, cv2.THRESH_BINARY)
-        image_resize = cv2.resize(thresh, (416, 416), interpolation=cv2.INTER_LINEAR)
-        image_data = np.expand_dims(image_resize, axis=-1)
-        r_image, result = yolo.detect_image(image_data)
-        cv2.imshow('Result: <{}>'.format(result), r_image)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+    while True:
+        img = input('Input image filename:')
+        try:
+            image = Image.open(img)
+        except:
+            print('Open Error! Try again!')
+            continue
+        else:
+            r_image, result = yolo.detect_image(image)
+            print('*************  Result is {}  *************'.format(result))
     yolo.close_session()
 
 FLAGS = None
@@ -76,7 +71,5 @@ if __name__ == '__main__':
         if "input" in FLAGS:
             print(" Ignoring remaining command line arguments: " + FLAGS.input + "," + FLAGS.output)
         detect_img(YOLO(**vars(FLAGS)))
-    elif "input" in FLAGS:
-        detect_video(YOLO(**vars(FLAGS)), FLAGS.input, FLAGS.output)
     else:
         print("Must specify at least video_input_path.  See usage with --help.")
