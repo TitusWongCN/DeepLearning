@@ -15,7 +15,7 @@ import cv2
 
 
 def _main():
-    annotation_path = 'data/capchars/data.txt'
+    annotation_path = r'F:\WorkDir.Main\WorkDir\DeepLearning\keras-yolo3-captcha\data\captchas\data.txt'
     log_dir = 'logs/'
     classes_path = 'model_data/cap_classes.txt'
     anchors_path = 'model_data/tiny_yolo_anchors.txt'
